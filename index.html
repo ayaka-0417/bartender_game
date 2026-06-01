@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍸 Midnight Bar — バーテンダーゲーム</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0810;
+    --panel: #12101a;
+    --panel2: #1a1726;
+    --border: #2e2840;
+    --gold: #c9a84c;
+    --gold2: #e8c97a;
+    --cream: #f0e6d0;
+    --muted: #7a6e8a;
+    --red: #c04848;
+    --green: #4a9c6e;
+    --blue: #4870c0;
+    --orange: #c87040;
+    --pink: #c060a0;
+    --teal: #4090a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% 0%, #1e1630 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 80% 100%, #0e1428 0%, transparent 60%);
+  }
+
+  /* ========== HEADER ========== */
+  header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #110e1c 0%, transparent 100%);
+    position: relative;
+  }
+  header::after {
+    content: '';
+    display: block;
+    width: 120px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 0.6rem auto 0;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    letter-spacing: 0.15em;
+    color: var(--gold2);
+    text-shadow: 0 0 40px rgba(201,168,76,0.4);
+  }
+  header p {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    margin-top: 0.3rem;
+  }
+
+  /* ========== LAYOUT ========== */
+  .game-wrap {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    grid-template-rows: auto 1fr;
+    gap: 1px;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 120px);
+  }
+  @media (max-width: 900px) {
+    .game-wrap { grid-template-columns: 1fr; }
+  }
+
+  /* ========== STATUS BAR ========== */
+  .status-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1.5rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .stat-label { font-size: 0.65rem; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+  .stat-value { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold2); }
+
+  /* ========== RECIPE BOOK ========== */
+  .recipe-panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 1.2rem;
+    overflow-y: auto;
+    max-height: 80vh;
+  }
+  .panel-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .recipe-card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+  }
+  .recipe-card:hover { border-color: var(--gold); transform: translateX(2px); }
+  .recipe-card.active { border-color: var(--gold2); background: #1e1a2e; }
+  .recipe-card.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--gold2);
+    border-radius: 4px 0 0 4px;
+  }
+  .recipe-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--cream);
+    margin-bottom: 0.25rem;
+  }
+  .recipe-type {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .recipe-color-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* ========== MAIN BAR ========== */
+  .bar-main {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* Recipe detail */
+  .recipe-detail {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    min-height: 120px;
+    transition: all 0.3s;
+  }
+  .recipe-detail h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--gold2);
+    margin-bottom: 0.3rem;
+  }
+  .recipe-detail .desc {
+    font-style: italic;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+  }
+  .ingredient-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+  }
+  .ing-tag {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: border-color 0.2s;
+  }
+  .ing-tag.added { border-color: var(--green); color: var(--green); }
+  .ing-tag .amount { color: var(--muted); font-size: 0.75rem; }
+
+  /* Shaker area */
+  .shaker-area {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .glass-display {
+    flex: 0 0 140px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 1rem 0.5rem 0.5rem;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 180px;
+  }
+  .glass-svg {
+    width: 80px;
+    position: relative;
+    z-index: 2;
+  }
+  .glass-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    z-index: 2;
+  }
+
+  /* Liquid fill */
+  .liquid-fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    transition: height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.5s;
+    z-index: 1;
+    opacity: 0.6;
+    border-radius: 0 0 4px 4px;
+  }
+
+  /* Ingredient buttons */
+  .ingredients-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.6rem;
+    align-content: start;
+  }
+  .ing-btn {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.4rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .ing-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .ing-btn:hover::after { opacity: 0.08; }
+  .ing-btn:active { transform: scale(0.97); }
+  .ing-btn .ing-icon { font-size: 1.2rem; display: block; margin-bottom: 0.2rem; }
+  .ing-btn .ing-name { display: block; font-size: 0.78rem; color: var(--muted); }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    padding: 0.6rem 1.5rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #0a0810;
+    font-weight: bold;
+  }
+  .btn-gold:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--cream); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Result message */
+  .result-msg {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--cream);
+    border-radius: 6px;
+    padding: 0.8rem;
+    transition: all 0.4s;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .result-msg.success { border-color: var(--green); color: var(--green); background: rgba(74,156,110,0.08); }
+  .result-msg.fail { border-color: var(--red); color: var(--red); background: rgba(192,72,72,0.08); }
+
+  /* ========== RIGHT PANEL: ORDERS ========== */
+  .order-panel {
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 1.2rem;
+    overflow-y: auto;
+    max-height: 80vh;
+  }
+  .customer-card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .customer-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--cream);
+    margin-bottom: 0.2rem;
+  }
+  .customer-order {
+    font-size: 0.82rem;
+    color: var(--gold);
+    margin-bottom: 0.4rem;
+    font-style: italic;
+  }
+  .customer-mood {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .timer-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s linear, background-color 0.5s;
+  }
+
+  /* Current mix display */
+  .current-mix {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+    min-height: 50px;
+  }
+  .mix-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  .mix-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    min-height: 28px;
+  }
+  .mix-chip {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.78rem;
+    color: var(--cream);
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* Animations */
+  @keyframes shimmer {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  .shaking {
+    animation: shake 0.5s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0) rotate(0deg); }
+    20% { transform: translateX(-8px) rotate(-3deg); }
+    40% { transform: translateX(8px) rotate(3deg); }
+    60% { transform: translateX(-6px) rotate(-2deg); }
+    80% { transform: translateX(6px) rotate(2deg); }
+  }
+  .no-order {
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 2rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍸 Midnight Bar</h1>
+  <p>レシピを見ながら、最高のカクテルを作ろう</p>
+</header>
+
+<div class="game-wrap">
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div class="stat">
+      <span class="stat-label">💰 売上</span>
+      <span class="stat-value" id="money">¥0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">⭐ 評判</span>
+      <span class="stat-value" id="rep">★★★</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">🍸 提供数</span>
+      <span class="stat-value" id="served">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">❌ ミス</span>
+      <span class="stat-value" id="miss">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">🌙 レベル</span>
+      <span class="stat-value" id="level">見習い</span>
+    </div>
+  </div>
+
+  <!-- LEFT: RECIPE BOOK -->
+  <div class="recipe-panel">
+    <div class="panel-title">📖 レシピブック</div>
+    <div id="recipe-list"></div>
+  </div>
+
+  <!-- CENTER: BAR COUNTER -->
+  <div class="bar-main">
+    <!-- Recipe detail -->
+    <div class="recipe-detail" id="recipe-detail">
+      <p style="color:var(--muted);font-style:italic;text-align:center;padding:1rem 0;">
+        ← レシピを選んでください
+      </p>
+    </div>
+
+    <!-- Shaker + ingredients -->
+    <div class="shaker-area">
+      <div class="glass-display">
+        <div class="liquid-fill" id="liquid-fill" style="height:0%;background:#c9a84c;"></div>
+        <svg class="glass-svg" viewBox="0 0 60 90" id="glass-svg">
+          <defs>
+            <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+              <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0.12)"/>
+            </linearGradient>
+          </defs>
+          <polygon points="8,5 52,5 45,85 15,85" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        </svg>
+        <div class="glass-label" id="glass-type">グラス</div>
+      </div>
+
+      <div class="ingredients-grid" id="ingredients-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Current mix -->
+    <div class="current-mix">
+      <div class="mix-title">グラスの中</div>
+      <div class="mix-items" id="mix-items">
+        <span style="color:var(--muted);font-size:0.8rem;font-style:italic;">まだ何も入っていません</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row">
+      <button class="btn btn-gold" id="serve-btn" onclick="serveDrink()" disabled>🍸 提供する</button>
+      <button class="btn btn-ghost" onclick="resetGlass()">🔄 リセット</button>
+    </div>
+
+    <!-- Result -->
+    <div class="result-msg" id="result-msg">カクテルを作って、お客様に提供しましょう</div>
+  </div>
+
+  <!-- RIGHT: ORDERS -->
+  <div class="order-panel">
+    <div class="panel-title">🎭 お客様</div>
+    <div id="customer-list">
+      <div class="no-order">バーがオープンしました<br>お客様をお待ちください…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const RECIPES = [
+  {
+    id: 'mojito',
+    name: 'モヒート',
+    type: 'ロングドリンク',
+    color: '#3db87a',
+    glass: 'ハイボールグラス',
+    desc: 'ミントとライムが香る、さわやかなキューバ生まれのカクテル。',
+    ingredients: [
+      { id: 'rum', label: 'ホワイトラム', amount: '45ml' },
+      { id: 'lime', label: 'ライムジュース', amount: '30ml' },
+      { id: 'mint', label: 'ミント', amount: '適量' },
+      { id: 'soda', label: 'ソーダ', amount: 'トップアップ' },
+      { id: 'sugar', label: 'シュガーシロップ', amount: '15ml' },
+    ],
+    price: 1200
+  },
+  {
+    id: 'cosmopolitan',
+    name: 'コスモポリタン',
+    type: 'ショートドリンク',
+    color: '#e05080',
+    glass: 'カクテルグラス',
+    desc: '上品なピンクが美しい、映画「SEX AND THE CITY」でおなじみのカクテル。',
+    ingredients: [
+      { id: 'vodka', label: 'ウォッカ', amount: '45ml' },
+      { id: 'triple_sec', label: 'トリプルセック', amount: '15ml' },
+      { id: 'lime', label: 'ライムジュース', amount: '15ml' },
+      { id: 'cranberry', label: 'クランベリージュース', amount: '30ml' },
+    ],
+    price: 1400
+  },
+  {
+    id: 'gin_tonic',
+    name: 'ジントニック',
+    type: 'ロングドリンク',
+    color: '#9de0b0',
+    glass: 'ハイボールグラス',
+    desc: '世界中で愛されるスタンダードカクテル。シンプルながら奥深い。',
+    ingredients: [
+      { id: 'gin', label: 'ジン', amount: '45ml' },
+      { id: 'tonic', label: 'トニックウォーター', amount: 'トップアップ' },
+      { id: 'lime', label: 'ライム（飾り）', amount: '1スライス' },
+    ],
+    price: 1000
+  },
+  {
+    id: 'negroni',
+    name: 'ネグローニ',
+    type: 'ショートドリンク',
+    color: '#c04830',
+    glass: 'オールドファッションドグラス',
+    desc: 'ビターでスモーキー、クラシカルなイタリア生まれのカクテル。',
+    ingredients: [
+      { id: 'gin', label: 'ジン', amount: '30ml' },
+      { id: 'campari', label: 'カンパリ', amount: '30ml' },
+      { id: 'vermouth', label: 'スイートベルモット', amount: '30ml' },
+    ],
+    price: 1500
+  },
+  {
+    id: 'margarita',
+    name: 'マルガリータ',
+    type: 'ショートドリンク',
+    color: '#d4e050',
+    glass: 'カクテルグラス',
+    desc: 'テキーラベースの定番カクテル。塩のリムが特徴的。',
+    ingredients: [
+      { id: 'tequila', label: 'テキーラ', amount: '45ml' },
+      { id: 'triple_sec', label: 'トリプルセック', amount: '15ml' },
+      { id: 'lime', label: 'ライムジュース', amount: '30ml' },
+      { id: 'salt', label: '塩（リム用）', amount: '適量' },
+    ],
+    price: 1300
+  },
+  {
+    id: 'espresso_martini',
+    name: 'エスプレッソマティーニ',
+    type: 'ショートドリンク',
+    color: '#3a2010',
+    glass: 'カクテルグラス',
+    desc: '深いコーヒーの香りとウォッカが融合した、おしゃれな夜のカクテル。',
+    ingredients: [
+      { id: 'vodka', label: 'ウォッカ', amount: '45ml' },
+      { id: 'espresso', label: 'エスプレッソ', amount: '30ml' },
+      { id: 'kahlua', label: 'カルーア', amount: '15ml' },
+      { id: 'sugar', label: 'シュガーシロップ', amount: '10ml' },
+    ],
+    price: 1600
+  },
+  {
+    id: 'blue_lagoon',
+    name: 'ブルーラグーン',
+    type: 'ロングドリンク',
+    color: '#2090e0',
+    glass: 'ハイボールグラス',
+    desc: '鮮やかなブルーが美しい、見た目も楽しいトロピカルカクテル。',
+    ingredients: [
+      { id: 'vodka', label: 'ウォッカ', amount: '45ml' },
+      { id: 'blue_curacao', label: 'ブルーキュラソー', amount: '20ml' },
+      { id: 'lemon', label: 'レモンジュース', amount: '20ml' },
+      { id: 'soda', label: 'ソーダ', amount: 'トップアップ' },
+    ],
+    price: 1200
+  },
+  {
+    id: 'shirley_temple',
+    name: 'シャーリーテンプル',
+    type: 'ノンアルコール',
+    color: '#f0803a',
+    glass: 'ハイボールグラス',
+    desc: 'ノンアルコールの定番。甘くてフルーティーで誰でも楽しめる。',
+    ingredients: [
+      { id: 'grenadine', label: 'グレナデンシロップ', amount: '20ml' },
+      { id: 'ginger_ale', label: 'ジンジャーエール', amount: 'トップアップ' },
+      { id: 'orange', label: 'オレンジジュース', amount: '30ml' },
+    ],
+    price: 800
+  }
+];
+
+const ALL_INGREDIENTS = [
+  { id: 'rum', icon: '🥃', name: 'ホワイトラム' },
+  { id: 'vodka', icon: '🍶', name: 'ウォッカ' },
+  { id: 'gin', icon: '🌿', name: 'ジン' },
+  { id: 'tequila', icon: '🌵', name: 'テキーラ' },
+  { id: 'campari', icon: '🔴', name: 'カンパリ' },
+  { id: 'vermouth', icon: '🍷', name: 'ベルモット' },
+  { id: 'triple_sec', icon: '🍊', name: 'トリプルセック' },
+  { id: 'blue_curacao', icon: '💙', name: 'ブルーキュラソー' },
+  { id: 'kahlua', icon: '☕', name: 'カルーア' },
+  { id: 'lime', icon: '🍋', name: 'ライム' },
+  { id: 'lemon', icon: '🍋', name: 'レモン' },
+  { id: 'orange', icon: '🍊', name: 'オレンジ' },
+  { id: 'cranberry', icon: '🍒', name: 'クランベリー' },
+  { id: 'grenadine', icon: '🌹', name: 'グレナデン' },
+  { id: 'mint', icon: '🌱', name: 'ミント' },
+  { id: 'sugar', icon: '🍯', name: 'シロップ' },
+  { id: 'salt', icon: '🧂', name: '塩' },
+  { id: 'soda', icon: '💧', name: 'ソーダ' },
+  { id: 'tonic', icon: '🫧', name: 'トニック' },
+  { id: 'ginger_ale', icon: '✨', name: 'ジンジャーエール' },
+  { id: 'espresso', icon: '☕', name: 'エスプレッソ' },
+];
+
+const CUSTOMERS = [
+  { name: 'アリス', mood: '「ちょっと甘めのものが飲みたいな…」', style: '上品な女性' },
+  { name: '田中さん', mood: '「今日は仕事で疲れたよ」', style: 'ビジネスマン' },
+  { name: 'ソフィア', mood: '「何かおすすめある？」', style: '旅行者' },
+  { name: '健太', mood: '「かっこいいカクテル頼みます！」', style: '若い男性' },
+  { name: 'ミス・チェン', mood: '「特別な夜にしたい」', style: 'ミステリアスな女性' },
+  { name: 'マルコ', mood: '「クラシックなのが好きなんだ」', style: 'バー通の男性' },
+  { name: '遥', mood: '「お酒は弱いけど…」', style: '控えめな女性' },
+  { name: 'ビクター', mood: '「強いやつくれ！」', style: '陽気な男性' },
+];
+
+// ===================== STATE =====================
+let state = {
+  money: 0,
+  served: 0,
+  miss: 0,
+  rep: 5,
+  selectedRecipe: null,
+  currentMix: [],
+  customers: [],
+  customerTimers: {},
+  nextCustomerIn: 5,
+};
+
+// ===================== INIT =====================
+function init() {
+  renderRecipeList();
+  renderIngredients();
+  updateStats();
+  setInterval(gameLoop, 1000);
+  // First customer shortly
+  setTimeout(addCustomer, 3000);
+}
+
+function gameLoop() {
+  state.nextCustomerIn--;
+  if (state.nextCustomerIn <= 0) {
+    if (state.customers.length < 4) addCustomer();
+    state.nextCustomerIn = Math.floor(Math.random() * 15) + 8;
+  }
+  updateTimers();
+}
+
+// ===================== RECIPES =====================
+function renderRecipeList() {
+  const el = document.getElementById('recipe-list');
+  el.innerHTML = RECIPES.map(r => `
+    <div class="recipe-card" id="rc-${r.id}" onclick="selectRecipe('${r.id}')">
+      <div class="recipe-name">
+        <span class="recipe-color-dot" style="background:${r.color}"></span>${r.name}
+      </div>
+      <div class="recipe-type">${r.type} · ¥${r.price}</div>
+    </div>
+  `).join('');
+}
+
+function selectRecipe(id) {
+  state.selectedRecipe = RECIPES.find(r => r.id === id);
+  // update active
+  document.querySelectorAll('.recipe-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('rc-' + id)?.classList.add('active');
+  renderRecipeDetail();
+  resetGlass();
+}
+
+function renderRecipeDetail() {
+  const r = state.selectedRecipe;
+  if (!r) return;
+  document.getElementById('recipe-detail').innerHTML = `
+    <h2>${r.name}</h2>
+    <div class="desc">${r.desc}</div>
+    <div class="ingredient-list" id="ing-tags">
+      ${r.ingredients.map(i => `
+        <span class="ing-tag" id="tag-${i.id}">
+          ${i.label} <span class="amount">${i.amount}</span>
+        </span>
+      `).join('')}
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted)">グラス: ${r.glass} · ¥${r.price}</div>
+  `;
+  updateGlassSvg(r);
+}
+
+function updateGlassSvg(r) {
+  document.getElementById('glass-type').textContent = r.glass;
+  const svg = document.getElementById('glass-svg');
+  // Different glass shapes
+  if (r.glass === 'カクテルグラス') {
+    svg.innerHTML = `<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient></defs>
+    <polygon points="5,5 55,5 35,55 25,55" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+    <line x1="30" y1="55" x2="30" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+    <ellipse cx="30" cy="82" rx="14" ry="4" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>`;
+  } else if (r.glass === 'オールドファッションドグラス') {
+    svg.innerHTML = `<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient></defs>
+    <rect x="10" y="15" width="40" height="60" rx="3" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>`;
+  } else {
+    svg.innerHTML = `<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient></defs>
+    <polygon points="8,5 52,5 45,85 15,85" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>`;
+  }
+  document.getElementById('liquid-fill').style.height = '0%';
+  document.getElementById('liquid-fill').style.backgroundColor = r.color;
+}
+
+// ===================== INGREDIENTS =====================
+function renderIngredients() {
+  const grid = document.getElementById('ingredients-grid');
+  grid.innerHTML = ALL_INGREDIENTS.map(ing => `
+    <button class="ing-btn" onclick="addIngredient('${ing.id}')" id="ibtn-${ing.id}">
+      <span class="ing-icon">${ing.icon}</span>
+      <span class="ing-name">${ing.name}</span>
+    </button>
+  `).join('');
+}
+
+function addIngredient(id) {
+  if (!state.selectedRecipe) {
+    showResult('まずレシピを選んでください！', 'fail'); return;
+  }
+  state.currentMix.push(id);
+  updateMixDisplay();
+  updateLiquidFill();
+  // Check ingredient tag
+  updateIngTags();
+  // Enable serve if enough
+  checkServeReady();
+}
+
+function updateMixDisplay() {
+  const el = document.getElementById('mix-items');
+  if (state.currentMix.length === 0) {
+    el.innerHTML = '<span style="color:var(--muted);font-size:0.8rem;font-style:italic;">まだ何も入っていません</span>';
+    return;
+  }
+  el.innerHTML = state.currentMix.map(id => {
+    const ing = ALL_INGREDIENTS.find(i => i.id === id);
+    return `<span class="mix-chip">${ing ? ing.icon + ' ' + ing.name : id}</span>`;
+  }).join('');
+}
+
+function updateLiquidFill() {
+  if (!state.selectedRecipe) return;
+  const max = state.selectedRecipe.ingredients.length;
+  const pct = Math.min((state.currentMix.length / max) * 80 + 5, 85);
+  document.getElementById('liquid-fill').style.height = pct + '%';
+}
+
+function updateIngTags() {
+  if (!state.selectedRecipe) return;
+  const r = state.selectedRecipe;
+  r.ingredients.forEach(i => {
+    const tag = document.getElementById('tag-' + i.id);
+    if (tag) {
+      if (state.currentMix.includes(i.id)) {
+        tag.classList.add('added');
+        tag.innerHTML = `✓ ${i.label} <span class="amount">${i.amount}</span>`;
+      } else {
+        tag.classList.remove('added');
+        tag.innerHTML = `${i.label} <span class="amount">${i.amount}</span>`;
+      }
+    }
+  });
+}
+
+function checkServeReady() {
+  if (!state.selectedRecipe) return;
+  const r = state.selectedRecipe;
+  const required = r.ingredients.map(i => i.id);
+  const hasAll = required.every(id => state.currentMix.includes(id));
+  document.getElementById('serve-btn').disabled = !hasAll;
+}
+
+function resetGlass() {
+  state.currentMix = [];
+  updateMixDisplay();
+  updateIngTags();
+  document.getElementById('liquid-fill').style.height = '0%';
+  document.getElementById('serve-btn').disabled = true;
+  document.getElementById('result-msg').textContent = 'カクテルを作って、お客様に提供しましょう';
+  document.getElementById('result-msg').className = 'result-msg';
+}
+
+// ===================== SERVING =====================
+function serveDrink() {
+  if (!state.selectedRecipe) return;
+  const r = state.selectedRecipe;
+  const required = r.ingredients.map(i => i.id).sort();
+  const given = [...state.currentMix].sort();
+  // Check correctness (must have all required, no extras beyond required)
+  const extraIngredients = state.currentMix.filter(id => !r.ingredients.find(i => i.id === id));
+  const hasAll = required.every(id => state.currentMix.includes(id));
+
+  // Shake animation
+  document.getElementById('glass-svg').closest('.glass-display').classList.add('shaking');
+  setTimeout(() => {
+    document.getElementById('glass-svg').closest('.glass-display').classList.remove('shaking');
+  }, 600);
+
+  // Check if customer ordered this
+  const matchingCustomer = state.customers.find(c => c.order === r.id);
+
+  if (!hasAll || extraIngredients.length > 0) {
+    state.miss++;
+    showResult('❌ レシピが違います…もう一度確認しましょう', 'fail');
+    updateStats();
+    return;
+  }
+
+  // Success!
+  let earnedMoney = r.price;
+  let msg = '';
+
+  if (matchingCustomer) {
+    // Bonus for matching order
+    earnedMoney = Math.floor(r.price * 1.2);
+    msg = `✨ ${matchingCustomer.name}さんに「${r.name}」を提供！ +¥${earnedMoney}（注文通りボーナス！）`;
+    removeCustomer(matchingCustomer.id);
+  } else if (state.customers.length > 0) {
+    msg = `🍸 「${r.name}」を提供！ +¥${earnedMoney}`;
+  } else {
+    msg = `🍸 「${r.name}」を完成！ +¥${earnedMoney}`;
+  }
+
+  state.money += earnedMoney;
+  state.served++;
+  if (state.rep < 10) state.rep = Math.min(10, state.rep + 0.5);
+
+  showResult(msg, 'success');
+  resetGlass();
+  updateStats();
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('result-msg');
+  el.textContent = msg;
+  el.className = 'result-msg ' + (type || '');
+}
+
+// ===================== CUSTOMERS =====================
+let customerIdCounter = 0;
+function addCustomer() {
+  const cust = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)];
+  const recipe = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+  const id = ++customerIdCounter;
+  const customer = {
+    id,
+    name: cust.name,
+    mood: cust.mood,
+    style: cust.style,
+    order: recipe.id,
+    orderName: recipe.name,
+    timeLeft: 45,
+    maxTime: 45
+  };
+  state.customers.push(customer);
+  renderCustomers();
+
+  // Timer
+  state.customerTimers[id] = setInterval(() => {
+    const c = state.customers.find(x => x.id === id);
+    if (!c) { clearInterval(state.customerTimers[id]); return; }
+    c.timeLeft--;
+    updateCustomerTimer(id, c.timeLeft, c.maxTime);
+    if (c.timeLeft <= 0) {
+      // Customer leaves
+      clearInterval(state.customerTimers[id]);
+      removeCustomer(id);
+      state.miss++;
+      state.rep = Math.max(0, state.rep - 1);
+      showResult(`😢 ${c.name}さんが待ちきれず帰ってしまいました…`, 'fail');
+      updateStats();
+    }
+  }, 1000);
+}
+
+function removeCustomer(id) {
+  clearInterval(state.customerTimers[id]);
+  state.customers = state.customers.filter(c => c.id !== id);
+  renderCustomers();
+}
+
+function renderCustomers() {
+  const el = document.getElementById('customer-list');
+  if (state.customers.length === 0) {
+    el.innerHTML = '<div class="no-order">お客様をお待ちしています…</div>';
+    return;
+  }
+  el.innerHTML = state.customers.map(c => `
+    <div class="customer-card" id="cust-${c.id}">
+      <div class="customer-name">${c.name} <span style="font-size:0.72rem;color:var(--muted)">(${c.style})</span></div>
+      <div class="customer-order">「${c.orderName}」をお願いします</div>
+      <div class="customer-mood">${c.mood}</div>
+      <div class="timer-bar">
+        <div class="timer-fill" id="timer-${c.id}" style="width:100%;background:var(--green)"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateCustomerTimer(id, timeLeft, maxTime) {
+  const bar = document.getElementById('timer-' + id);
+  if (!bar) return;
+  const pct = (timeLeft / maxTime) * 100;
+  bar.style.width = pct + '%';
+  if (pct > 60) bar.style.background = 'var(--green)';
+  else if (pct > 30) bar.style.background = 'var(--gold)';
+  else bar.style.background = 'var(--red)';
+}
+
+function updateTimers() {
+  state.customers.forEach(c => updateCustomerTimer(c.id, c.timeLeft, c.maxTime));
+}
+
+// ===================== STATS =====================
+function updateStats() {
+  document.getElementById('money').textContent = '¥' + state.money.toLocaleString();
+  document.getElementById('served').textContent = state.served;
+  document.getElementById('miss').textContent = state.miss;
+  const stars = Math.max(0, Math.min(5, Math.round(state.rep / 2)));
+  document.getElementById('rep').textContent = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+
+  // Level
+  let level = '見習い';
+  if (state.served >= 5) level = 'スタッフ';
+  if (state.served >= 15) level = 'バーテンダー';
+  if (state.served >= 30) level = 'シニア';
+  if (state.served >= 50) level = 'マスター';
+  document.getElementById('level').textContent = level;
+}
+
+// ===================== START =====================
+init();
+</script>
+</body>
+</html>
